@@ -44,25 +44,22 @@ registry2 = ConnectionRegistry()
 assert registry is registry2, "Singleton порушено!"
 print("[Singleton] ConnectionRegistry — той самий об'єкт:", id(registry))
 
-# ══════════════════════════════════════════════════════════════
-# 2. BUILDER — будуємо конфігурації підключень
-# ══════════════════════════════════════════════════════════════
+# PostgreSQL (Engineering)
 pg_config = (ConnectionBuilder()
              .set_type("postgresql")
-             .set_host("pg.company.ua")
+             .set_host("localhost")
              .set_port(5432)
-             .set_database("hrm_db")
-             .set_credentials("hr_user", "s3cur3pass")
+             .set_database("postgres")
+             .set_credentials("postgres", "123 ")
              .build())
 
+# Redis (Marketing)
 redis_config = (ConnectionBuilder()
                 .set_type("redis")
-                .set_host("redis.company.ua")
+                .set_host("localhost")
                 .set_port(6379)
-                .set_option("db", 2)
-                .set_option("password", "r3dis_pass")
+                .set_option("db", 0)
                 .build())
-
 excel_config = (ConnectionBuilder()
                 .set_type("excel")
                 .set_option("file_path", "data/Finance.xlsx")
