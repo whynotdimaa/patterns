@@ -4,10 +4,11 @@ Factory Method Pattern — DBConnectionFactory.
 Підтримує реєстрацію нових типів без зміни коду фабрики.
 """
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Callable, Type
-from builder import ConnectionConfig
-from employees import Employee
+from typing import Callable
+from patterns.Infrastructure.builder import ConnectionConfig
+from patterns.Infrastructure.employees import Employee
 import psycopg2
 import redis
 
@@ -56,7 +57,7 @@ class PostgreSQLConnection(DatabaseConnection):
         return f"postgresql://{cfg.get('user')}:***@{cfg.get('host')}:{cfg.get('port')}/{cfg.get('database')}"
 
     def fetch_employees(self) -> list[Employee]:
-        from employees import Manager, OfficeClerk, SalesManager, SysAdmin
+        from patterns.Infrastructure.employees import Manager, SysAdmin
         cfg = self.config
         # Підключення до бази, яку ми створили в Docker/CMD
         conn = psycopg2.connect(
@@ -86,7 +87,7 @@ class RedisConnection(DatabaseConnection):
         return f"redis://{cfg.get('host')}:{cfg.get('port')}/db{cfg.get('db', 0)}"
 
     def fetch_employees(self) -> list[Employee]:
-        from employees import Manager, SalesManager, SysAdmin
+        from patterns.Infrastructure.employees import Manager, SalesManager, SysAdmin
         cfg = self.config
         r = redis.Redis(host=cfg.get('host'), port=cfg.get('port'), db=cfg.get('db', 0), decode_responses=True)
 
@@ -110,32 +111,22 @@ import pandas as pd
 
 
 class ExcelConnection(DatabaseConnection):
-
+    def _connection_string(self) -> str:
+        return f"excel://{self.config.get('file_path')}"
 
     def fetch_employees(self) -> list[Employee]:
-        from employees import Manager, OfficeClerk, SalesManager, SysAdmin
-
-
-        file_path = self.config.get('file_path', 'data/Finance.xlsx')
-        # Читаємо Excel через pandas
-        df = pd.read_excel(file_path, sheet_name=self.config.get('sheet_name', 0))
-
-        employees = []
+        import pandas as pd
+        df = pd.read_excel(
+            self.config.get("file_path", "data/Finance.xlsx"),
+            sheet_name=self.config.get("sheet_name", 0),
+        )
+        employees: list[Employee] = []
         for _, row in df.iterrows():
-            role = row['role']
-            eid, name, dept = int(row['id']), str(row['name']), str(row['department'])
-
-            if role == "Manager":
-                employees.append(Manager(eid, name, dept, float(row['base_salary']), float(row['bonus'])))
-            elif role == "OfficeClerk":
-                employees.append(OfficeClerk(eid, name, dept, float(row['hourly_rate']), float(row['hours_per_month'])))
-            elif role == "SalesManager":
-                employees.append(SalesManager(eid, name, dept, float(row['base_salary']), float(row['commission_rate']),
-                                              float(row['monthly_sales'])))
-            elif role == "SysAdmin":
-                employees.append(SysAdmin(eid, name, dept, float(row['base_salary']), float(row['on_call_hours']),
-                                          float(row['on_call_rate'])))
-
+            builder = _EXCEL_BUILDERS.get(row["role"])
+            if builder is None:
+                print(f"[ExcelConnection] Невідома роль: {row['role']!r} — пропущено")
+                continue
+            employees.append(builder(int(row["id"]), str(row["name"]), str(row["department"]), row))
         return employees
 
 # ──────────────────────────────────────────────

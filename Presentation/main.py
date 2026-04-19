@@ -18,15 +18,16 @@ main.py — Точка входу програми.
 import sys
 import os
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
 
-from singleton import ConnectionRegistry
-from builder   import ConnectionBuilder
-from factory   import DBConnectionFactory
-from prototype import EmployeePrototypeRegistry
-from repository import EmployeeRepository
-from analytics  import EmployeeAnalyticsService
-from charts import (
+from Infrastructure.singleton import ConnectionRegistry
+from Infrastructure.builder import ConnectionBuilder
+from Infrastructure.factory import DBConnectionFactory
+from Application.prototype import EmployeePrototypeRegistry
+from Application.repository import EmployeeRepository
+from Application.analytics import EmployeeAnalyticsService
+from Presentation.charts import (
     plot_headcount_by_department,
     plot_avg_salary_by_department,
     plot_role_distribution,
